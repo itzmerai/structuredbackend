@@ -43,8 +43,9 @@ const allprog = require('./routes/admin/dashboard/countprograms');
 //coordinator
 const addcompany = require('./routes/coordinator/company/addcompany');
 const getcompany = require('./routes/coordinator/company/getcompany');
+const getcompanyname = require('./routes/coordinator/company/updatecompany');
 const addstudent = require('./routes/coordinator/students/addstudent');
-const getcompanyname = require('./routes/coordinator/students/getcompanyname');
+const companyname = require('./routes/coordinator/students/getcompanyname');
 const veiwstudents = require('./routes/coordinator/students/getstudent')
 const annouce = require('./routes/coordinator/announcements/announcement');
 const annoucement = require('./routes/coordinator/announcements/veiwannoucement');
@@ -62,6 +63,7 @@ const getcurrentstudentpass = require('./routes/student/changepass/getcurrentstu
 const updatestudentpassword = require('./routes/student/changepass/studentchangepass');
 const latestannouncement = require('./routes/student/dashboard/latesannouncement');
 const homeds = require('./routes/student/dashboard/hometime');
+const updatecompany = require('./routes/coordinator/company/updatecompany');
 
 // Routes
 app.use('/api/add-admin', addadmin(db));
@@ -85,7 +87,8 @@ app.use('/api/count-programs',allprog(db));
 //Coordinator side API's
 app.use('/api/add-company',addcompany(db));
 app.use('/api/companiesni',getcompany(db));
-app.use('/api/companynameni',getcompanyname(db));
+app.use('/api/companynameni',companyname(db));
+app.use('/api/company',updatecompany(db));
 app.use('/api/add-student',addstudent(db));
 app.use('/api/studentsni',veiwstudents(db));
 app.use('/api/announcements',annouce(db));
