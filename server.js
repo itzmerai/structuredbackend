@@ -45,16 +45,19 @@ const addcompany = require('./routes/coordinator/company/addcompany');
 const getcompany = require('./routes/coordinator/company/getcompany');
 const getcompanyname = require('./routes/coordinator/company/updatecompany');
 const addstudent = require('./routes/coordinator/students/addstudent');
+const updatestudent = require ('./routes/coordinator/students/updatestudent');
 const companyname = require('./routes/coordinator/students/getcompanyname');
 const veiwstudents = require('./routes/coordinator/students/getstudent')
 const annouce = require('./routes/coordinator/announcements/announcement');
 const annoucement = require('./routes/coordinator/announcements/veiwannoucement');
+const studentreport = require('./routes/coordinator/reports/studentreport');
 const timesheet = require('./routes/coordinator/attendance/timesheet');
 //coordinator dashboard
 const coordinatorcom = require('./routes/coordinator/dashboard/coordinatorcompany');
 const coordinatorstudent = require('./routes/coordinator/dashboard/coordinatorstudent');
 const recentlyaddstudent = require('./routes/coordinator/dashboard/recentlyaddedstudent');
 const wcmessage = require('./routes/coordinator/dashboard/welcomecoordinator');
+const cdchart  = require ('./routes/coordinator/dashboard/cdchart');
 
 // student
 const dtr = require('./routes/student/dtr/timesheet');
@@ -90,6 +93,7 @@ app.use('/api/companiesni',getcompany(db));
 app.use('/api/companynameni',companyname(db));
 app.use('/api/company',updatecompany(db));
 app.use('/api/add-student',addstudent(db));
+app.use('/api/students',updatestudent(db));
 app.use('/api/studentsni',veiwstudents(db));
 app.use('/api/announcements',annouce(db));
 app.use('/api/announcementsni',annoucement(db));
@@ -97,7 +101,9 @@ app.use('/api/timesheet',timesheet(db));
 app.use('/api/count-companies',coordinatorcom(db));
 app.use('/api/count-students',coordinatorstudent(db));
 app.use('/api/recent-students',recentlyaddstudent(db));
+app.use('/api/reportstudent', studentreport(db));
 app.use('/api/coordinatorwc', wcmessage(db));
+app.use('/api/top-companies', cdchart(db));
 
 //student side API's
 app.use('/api/student-timesheet', dtr(db));
@@ -122,6 +128,7 @@ app.get("/api/check-email", async (req, res) => {
       res.status(500).json({ error: "Failed to check email availability." });
     }
   });
+
 
 // Start server
 app.listen(port, () => {
