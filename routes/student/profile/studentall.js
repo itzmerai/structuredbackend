@@ -10,25 +10,24 @@ module.exports = (db) => {
     }
 
     const query = `
-          SELECT 
-            s.student_name, 
-            s.student_address, 
-            s.student_contact,
-            s.student_schoolid,
-            s.student_sex,
-            s.student_email, 
-            c.company_name, 
-            c.company_address, 
-            c.company_mentor, 
-            c.company_contact, 
-            p.program_name, 
-            sy.school_yr 
-          FROM student s
-          LEFT JOIN company c ON s.company_id = c.company_id
-          LEFT JOIN coordinator co ON s.coordinator_id = co.coordinator_id
-          LEFT JOIN program p ON co.program_id = p.program_id
-          LEFT JOIN school_year sy ON s.year_id = sy.year_id
-          WHERE s.student_id = ?;
+            SELECT 
+                s.student_name, 
+                s.student_address, 
+                s.student_contact,
+                s.student_schoolid,
+                s.student_sex,
+                s.student_email, 
+                c.company_name, 
+                c.company_address, 
+                c.company_supervisor AS company_mentor, 
+                c.company_supervisorContact AS company_contact, 
+                p.program_name, 
+                sy.school_sy 
+            FROM student s
+            LEFT JOIN company c ON s.company_id = c.company_id
+            LEFT JOIN program p ON s.program_id = p.program_id
+            LEFT JOIN school_year sy ON s.year_id = sy.year_id
+            WHERE s.student_id = ?;
         `;
 
     db.query(query, [student_id], (err, results) => {
@@ -44,5 +43,6 @@ module.exports = (db) => {
       res.status(200).json({ studentDetails: results[0] });
     });
   });
+
   return router;
 };
