@@ -1,20 +1,27 @@
-const mysql = require("mysql2");
+// Replace your current connection code with this
+const mysql = require("mysql2/promise"); // ← Note the /promise suffix
 require("dotenv").config();
 
-const connection = mysql.createConnection({
+// Create a connection pool instead of a single connection
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-// Only connect when initializing
-connection.connect((err) => {
-  if (err) {
+// Test the connection
+pool
+  .getConnection()
+  .then((connection) => {
+    console.log("Connected to MySQL database");
+    connection.release();
+  })
+  .catch((err) => {
     console.error("Error connecting to MySQL:", err);
-    return;
-  }
-  console.log("Connected to MySQL database.");
-});
+  });
 
-module.exports = connection;
+module.exports = pool;

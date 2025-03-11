@@ -20,11 +20,10 @@ module.exports = (db) => {
 
     try {
       // Verify current password
-      const [rows] = await db
-        .promise()
-        .query("SELECT student_password FROM student WHERE student_id = ?", [
-          student_id,
-        ]);
+      const [rows] = await db.query(
+        "SELECT student_password FROM student WHERE student_id = ?",
+        [student_id]
+      );
 
       if (rows.length === 0) {
         return res
@@ -32,20 +31,18 @@ module.exports = (db) => {
           .json({ success: false, message: "Student not found" });
       }
 
-      // Plain text comparison (INSECURE)
+      // Plain text password comparison
       if (currentPassword !== rows[0].student_password) {
         return res
           .status(401)
           .json({ success: false, message: "Current password is incorrect" });
       }
 
-      // Update with plain text password (INSECURE)
-      await db
-        .promise()
-        .query("UPDATE student SET student_password = ? WHERE student_id = ?", [
-          newPassword,
-          student_id,
-        ]);
+      // Update password in plain text (⚠️ Not recommended)
+      await db.query(
+        "UPDATE student SET student_password = ? WHERE student_id = ?",
+        [newPassword, student_id]
+      );
 
       res
         .status(200)
@@ -55,5 +52,6 @@ module.exports = (db) => {
       res.status(500).json({ success: false, message: "Server error" });
     }
   });
+
   return router;
 };

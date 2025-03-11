@@ -17,12 +17,10 @@ module.exports = (db) => {
 
     try {
       // Get student information including company_id and coordinator_id
-      const [studentResult] = await db
-        .promise()
-        .query(
-          "SELECT company_id, coordinator_id FROM student WHERE student_id = ?",
-          [studentId]
-        );
+      const [studentResult] = await db.query(
+        "SELECT company_id, coordinator_id FROM student WHERE student_id = ?",
+        [studentId]
+      );
 
       if (studentResult.length === 0) {
         return res.status(404).json({ error: "Student not found" });
@@ -36,11 +34,7 @@ module.exports = (db) => {
 
       // Process scan time using LOCAL DATE
       const scanDate = new Date(scanTime);
-      const year = scanDate.getFullYear();
-      const month = String(scanDate.getMonth() + 1).padStart(2, "0");
-      const day = String(scanDate.getDate()).padStart(2, "0");
-      const date = `${year}-${month}-${day}`; // Local date in YYYY-MM-DD format
-
+      const date = scanDate.toISOString().split("T")[0]; // YYYY-MM-DD format
       const time = scanDate.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "numeric",
@@ -48,12 +42,10 @@ module.exports = (db) => {
       });
 
       // Timesheet handling
-      const [timesheetRows] = await db
-        .promise()
-        .query("SELECT * FROM timesheet WHERE student_id = ? AND date = ?", [
-          studentId,
-          date,
-        ]);
+      const [timesheetRows] = await db.query(
+        "SELECT * FROM timesheet WHERE student_id = ? AND date = ?",
+        [studentId, date]
+      );
 
       if (timesheetRows.length > 0) {
         const timesheetEntry = timesheetRows[0];
@@ -73,28 +65,22 @@ module.exports = (db) => {
             .json({ error: "All time slots for the day are filled" });
         }
 
-        await db
-          .promise()
-          .query("UPDATE timesheet SET ? WHERE time_id = ?", [
-            updatedFields,
-            timesheetEntry.time_id,
-          ]);
+        await db.query("UPDATE timesheet SET ? WHERE time_id = ?", [
+          updatedFields,
+          timesheetEntry.time_id,
+        ]);
       } else {
-        await db
-          .promise()
-          .query(
-            "INSERT INTO timesheet (student_id, company_id, date, am_in, am_out, pm_in, pm_out, location, dailyrenderedtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [studentId, company_id, date, time, null, null, null, address, 0]
-          );
+        await db.query(
+          "INSERT INTO timesheet (student_id, company_id, date, am_in, location, dailyrenderedtime) VALUES (?, ?, ?, ?, ?, ?)",
+          [studentId, company_id, date, time, address, 0]
+        );
       }
 
       // Calculate daily rendered time
-      const [updatedTimesheet] = await db
-        .promise()
-        .query("SELECT * FROM timesheet WHERE student_id = ? AND date = ?", [
-          studentId,
-          date,
-        ]);
+      const [updatedTimesheet] = await db.query(
+        "SELECT * FROM timesheet WHERE student_id = ? AND date = ?",
+        [studentId, date]
+      );
 
       if (updatedTimesheet.length > 0) {
         const entry = updatedTimesheet[0];
@@ -129,12 +115,10 @@ module.exports = (db) => {
         );
         const totalHours = (morningHours + afternoonHours).toFixed(2);
 
-        await db
-          .promise()
-          .query(
-            "UPDATE timesheet SET dailyrenderedtime = ? WHERE time_id = ?",
-            [totalHours, entry.time_id]
-          );
+        await db.query(
+          "UPDATE timesheet SET dailyrenderedtime = ? WHERE time_id = ?",
+          [totalHours, entry.time_id]
+        );
 
         // Get program hours through coordinator
         if (!coordinator_id) {
@@ -143,12 +127,10 @@ module.exports = (db) => {
             .json({ error: "Student has no coordinator assigned" });
         }
 
-        const [coordinatorResult] = await db
-          .promise()
-          .query(
-            "SELECT program_id FROM coordinator WHERE coordinator_id = ?",
-            [coordinator_id]
-          );
+        const [coordinatorResult] = await db.query(
+          "SELECT program_id FROM coordinator WHERE coordinator_id = ?",
+          [coordinator_id]
+        );
 
         if (
           coordinatorResult.length === 0 ||
@@ -160,11 +142,10 @@ module.exports = (db) => {
         }
 
         const { program_id } = coordinatorResult[0];
-        const [programResult] = await db
-          .promise()
-          .query("SELECT program_hours FROM program WHERE program_id = ?", [
-            program_id,
-          ]);
+        const [programResult] = await db.query(
+          "SELECT program_hours FROM program WHERE program_id = ?",
+          [program_id]
+        );
 
         if (programResult.length === 0) {
           return res.status(400).json({ error: "Program not found" });
@@ -173,36 +154,31 @@ module.exports = (db) => {
         const programHours = programResult[0].program_hours;
 
         // Calculate total rendered time
-        const [renderedResult] = await db
-          .promise()
-          .query(
-            "SELECT SUM(dailyrenderedtime) AS totalRendered FROM timesheet WHERE student_id = ?",
-            [studentId]
-          );
+        const [renderedResult] = await db.query(
+          "SELECT SUM(dailyrenderedtime) AS totalRendered FROM timesheet WHERE student_id = ?",
+          [studentId]
+        );
 
         const totalRendered = parseFloat(renderedResult[0].totalRendered) || 0;
         const remainingTime = programHours - totalRendered;
         const timeStatus = remainingTime <= 0 ? "Completed" : "Ongoing";
 
         // Update OJT status
-        const [existingStatus] = await db
-          .promise()
-          .query("SELECT * FROM ojt_status WHERE student_id = ?", [studentId]);
+        const [existingStatus] = await db.query(
+          "SELECT * FROM ojt_status WHERE student_id = ?",
+          [studentId]
+        );
 
         if (existingStatus.length > 0) {
-          await db
-            .promise()
-            .query(
-              "UPDATE ojt_status SET rendered_time = ?, remaining_time = ?, time_status = ? WHERE student_id = ?",
-              [totalRendered, remainingTime, timeStatus, studentId]
-            );
+          await db.query(
+            "UPDATE ojt_status SET rendered_time = ?, remaining_time = ?, time_status = ? WHERE student_id = ?",
+            [totalRendered, remainingTime, timeStatus, studentId]
+          );
         } else {
-          await db
-            .promise()
-            .query(
-              "INSERT INTO ojt_status (student_id, rendered_time, remaining_time, time_status) VALUES (?, ?, ?, ?)",
-              [studentId, totalRendered, remainingTime, timeStatus]
-            );
+          await db.query(
+            "INSERT INTO ojt_status (student_id, rendered_time, remaining_time, time_status) VALUES (?, ?, ?, ?)",
+            [studentId, totalRendered, remainingTime, timeStatus]
+          );
         }
       }
 

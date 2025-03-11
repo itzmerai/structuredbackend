@@ -12,14 +12,6 @@ const port = process.env.PORT || 5000;
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(bodyParser.json());
 
-// Connect to the database
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to the database:", err);
-    return;
-  }
-  console.log("Connected to the database successfully!");
-});
 //includes
 const addadmin = require("./user/addingadmin");
 //admmin

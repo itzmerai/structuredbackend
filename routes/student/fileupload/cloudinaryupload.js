@@ -3,65 +3,68 @@ const router = express.Router();
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 const asyncHandler = require("express-async-handler");
-const cloudinary = require("../../../cloudinary"); // Ensure this path is correct
+const cloudinary = require("../../../cloudinary");
 require("dotenv").config();
 
-// Debugging: Log Cloudinary config
-console.log("Cloudinary Config:", {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY?.slice(0, 4) + "***", // Mask sensitive info
-  api_secret: process.env.CLOUDINARY_API_SECRET?.slice(0, 4) + "***",
-});
-
-// Configure Multer storage for Cloudinary
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary, // Use the pre-configured Cloudinary instance
+  cloudinary: cloudinary,
   params: (req, file) => ({
-    folder: `student_documents/${req.body.student_id}`, // Dynamic folder based on student_id
-    public_id: `${Date.now()}-${file.originalname.split(".")[0]}`, // Unique public_id
-    resource_type: "auto", // Automatically detect resource type (image, video, etc.)
+    folder: `student_documents/${req.body.student_id}`,
+    public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+    resource_type: "auto",
   }),
 });
 
 const upload = multer({ storage });
 
 module.exports = (db) => {
-  // POST endpoint for file upload
   router.post(
     "/",
     upload.single("document"),
     asyncHandler(async (req, res) => {
       try {
-        // Log incoming request
         console.log("Request body:", req.body);
-        console.log("Uploaded file:", req.file);
+        console.log("Uploaded file:", JSON.stringify(req.file, null, 2));
 
-        // Validate request
         if (!req.file) {
           return res.status(400).json({ error: "No file uploaded" });
         }
 
         const { student_id, remarks } = req.body;
 
-        // Validate required fields
         if (!student_id || !remarks) {
           return res
             .status(400)
             .json({ error: "student_id and remarks are required" });
         }
 
-        // Insert into database
+        const uploadedFileUrl =
+          req.file.secure_url || req.file.url || req.file.path;
+
+        if (!uploadedFileUrl) {
+          return res
+            .status(400)
+            .json({ error: "Failed to retrieve file URL from Cloudinary" });
+        }
+
+        console.log("Inserting into database:", {
+          student_id,
+          remarks,
+          uploaded_file: uploadedFileUrl,
+        });
+
         const result = await db.query(
           "INSERT INTO document (student_id, remarks, uploaded_file) VALUES (?, ?, ?)",
-          [student_id, remarks, req.file.secure_url]
+          [student_id, remarks, uploadedFileUrl]
         );
 
-        // Respond with success
+        console.log("Database insertion result:", result);
+
         res.status(201).json({
           document_id: result.insertId,
           student_id,
           remarks,
-          uploaded_file: req.file.secure_url,
+          uploaded_file: uploadedFileUrl,
           date_uploaded: new Date(),
         });
       } catch (error) {
@@ -73,26 +76,23 @@ module.exports = (db) => {
     })
   );
 
-  // GET endpoint to fetch documents
+  // Add this to your existing documents route file
   router.get(
-    "/:student_id",
+    "/",
     asyncHandler(async (req, res) => {
       try {
-        const { student_id } = req.params;
+        const { student_id } = req.query;
 
-        // Validate student_id
         if (!student_id) {
-          return res.status(400).json({ error: "student_id is required" });
+          return res.status(400).json({ error: "Student ID is required" });
         }
 
-        // Fetch documents from database
-        const documents = await db.query(
-          "SELECT * FROM document WHERE student_id = ?",
+        const [documents] = await db.query(
+          "SELECT document_id, remarks, uploaded_file, date_uploaded FROM document WHERE student_id = ? ORDER BY date_uploaded DESC",
           [student_id]
         );
 
-        // Respond with documents
-        res.json(documents);
+        res.status(200).json(documents);
       } catch (error) {
         console.error("Fetch error:", error);
         res.status(500).json({ error: "Failed to fetch documents" });
