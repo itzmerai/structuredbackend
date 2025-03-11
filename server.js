@@ -67,6 +67,7 @@ const updatecompany = require("./routes/coordinator/company/updatecompany");
 const dailytime = require("./routes/student/time/timerecord");
 const timedtr = require("./routes/student/dtr/timedtr");
 const changepass = require("./routes/student/changepass/changepass");
+const upload = require("./routes/student/fileupload/cloudinaryupload");
 
 // Routes
 app.use("/api/add-admin", addadmin(db));
@@ -113,6 +114,7 @@ app.use("/api/student-details", studentprofile(db));
 app.use("/api/latest-announcement", latestannouncement(db));
 app.use("/api/student-homedetails", homeds(db));
 app.use("/api/studentchangepass", changepass(db));
+app.use("/documents", upload(db));
 
 // Default route
 app.get("/", (req, res) => {
