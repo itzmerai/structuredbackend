@@ -1,17 +1,18 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
 module.exports = (db) => {
-    router.get ('/', (req, res) =>{
-        const query = 'SELECT COUNT(*) AS count FROM student';
-        db.query(query, (err, results) => {
-          if (err) {
-            console.error('Error fetching total students:', err);
-            return res.status(500).json({ error: 'Failed to fetch total students' });
-          }
-          res.json({ count: results[0].count });
-        });
+  router.get("/", async (req, res) => {
+    try {
+      const query = "SELECT COUNT(*) AS count FROM student";
+      const [results] = await db.query(query);
 
-    });
-return router;
-}
+      res.json({ count: results[0].count });
+    } catch (err) {
+      console.error("Error fetching total students:", err);
+      res.status(500).json({ error: "Failed to fetch total students" });
+    }
+  });
+
+  return router;
+};
